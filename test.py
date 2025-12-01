@@ -1,25 +1,40 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+my_token = os.getenv('DREWPH_DCTOKEN')
+
+from pymongo import MongoClient
+
+
 import discord
 from discord.ext import commands
+from discord.ui import View, Button, Select, Modal, TextInput
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!",intents=intents)
 
-@bot.command()
-async def log(ctx):
-    mychannel = ctx.channel
-    print(f"Command used in: {mychannel.id}, Name:{mychannel.name}, Category:{mychannel.category}")
-    await ctx.send("Hello world!")
+#Either a Modal for user to write info here
+class FeedbackModal(Modal, title="Details Form"):
+    handle = TextInput(required=True, label="Provide your X handle", placeholder="@handle")
+    address = TextInput(required=True, label="Provide your wallet address", placeholder="0x...")
+    async def on_submit(self, interaction:discord.Interaction):
+        await interaction.response.send_message(f"Thanks **{self.handle.value}**!", ephemeral=True)
+
+class ModalView(View):
+    @discord.ui.button(label="Open Form", style=discord.ButtonStyle.success)
+    async def button_callback(self, interaction:discord.Interaction, button:discord.ui.Button):
+        await interaction.response.send_modal(FeedbackModal())
 
 @bot.event
 async def on_guild_channel_create(channel):
-    my_category = 1234745442743488512
+    my_category = 1234745442743488512 
 
     if channel.category_id == my_category:
-        print("New channel has been created.")
-        print(f"Channel ID: {channel.id}, Name:{channel.name}, Category:{channel.category}")
+        print(f"New channel has been created on on {channel.category}.")
+    try:
+        await channel.send("Welcome! Press the button below to fill the form:",view=ModalView())
+    except Exception as e:
+        print("Failed to send message:", e)
 
-    #Either a Modal for user to write info here
-
-    #Log info on MongoDB    
-
-bot.run('')
+bot.run(my_token)
